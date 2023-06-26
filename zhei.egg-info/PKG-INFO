@@ -1,0 +1,12 @@
+Metadata-Version: 2.1
+Name: zhei
+Version: 0.0.4
+Summary: 深度学习实验工具类
+Home-page: https://github.com/deng1fan
+Author: deng1fan
+Author-email: dengyifan@iie.ac.cn
+Keywords: zhei,deep learning,pytorch
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
+
+Hello
