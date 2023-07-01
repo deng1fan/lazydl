@@ -1,2 +1,3 @@
 from zhei.utils import *
-from zhei.models import *
+from zhei.front import *
+from zhei.intro import *

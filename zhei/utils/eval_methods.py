@@ -1,5 +1,5 @@
 from zhei.utils.result import Result
-from zhei.utils.log import get_logger
+from zhei.utils.log import Logger
 from zhei.utils.catch_error import print_error_info
 from datasets import Dataset
 import pandas as pd
@@ -21,7 +21,7 @@ from rich.console import Console
 from rich.table import Table
 from typing import Union
 
-log = get_logger(__name__)
+log = Logger(__name__) 
 
 def distinct_ngram(candidates, n=2):
     """Return basic ngram statistics, as well as a dict of all ngrams and their freqsuencies."""

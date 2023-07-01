@@ -1,0 +1,40 @@
+# @package _global_
+
+defaults:
+  - override hydra/hydra_logging: colorlog
+  - override hydra/job_logging: colorlog
+  - _self_
+
+env:
+  comet_api_key: 9E7y6wGO8ohLlNBrJrwIYHByK
+  comet_project_name: Default Project
+
+  dingding_secret: SEC86418ce8939ca7ff3d2442ead039cec1d6cb765b01d7971e20b2c69ab2069eb3
+  dingding_access_token: 5f7199dea2b58e5c765fc3573335e0f558207ecf75304114c5015e2a6b4fed58
+
+  visibale_cuda: all
+
+  huggingface_hub_token: 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
+
+# 处理器类型
+# 如果为 gpu，共有以下几种选择：
+# 自动选择需要加上 ^ 符号，即 ^[GPU 数量]，如 ^2 表示自动选择 2 块显卡
+# 手动选择直接列出需要使用的显卡编号，如 0,1 表示使用 0 号和 1 号显卡
+processing_unit: cpu  # 必需
+# 是否排队等待处理器
+queuing: False  # 必需
+# 选择的处理器最小空闲显存，单位为 GB
+processing_unit_min_free_memory: 2
+# 选择的处理器最小空闲显存比例
+processing_unit_min_free_memory_ratio: 0.1
+# 处理器选择，程序自动填充，不需要手动填写
+# 其中，gpu-x-y 表示 x 表示是否手动选择（m：手动，a：自动），y 为显卡数量（m：多卡，s:单卡）
+processing_unit_type:  # cpu, gpu-m-m, gpu-m-s, gpu-a-m, gpu-a-s, ......
+
+
+# ---------------------------------------------------------------------------- #
+#                         任务标识、描述、Comet 设置等                                   
+# ---------------------------------------------------------------------------- #
+task_id: No task identifier.
+task_desc: No task description.
+

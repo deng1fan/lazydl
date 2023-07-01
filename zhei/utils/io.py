@@ -1,4 +1,4 @@
-from zhei.utils.log import get_logger
+from zhei.utils.log import Logger
 import os
 import pickle
 import json
@@ -6,7 +6,7 @@ import jsonlines
 import torch
 import pandas as pd
 
-log = get_logger(__name__)
+log = Logger(__name__) 
 
 
 def load_in(path, data_name=""):
