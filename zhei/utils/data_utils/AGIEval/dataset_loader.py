@@ -4,11 +4,11 @@
 import json
 import pandas as pd
 import tiktoken
-from src.constructions import ChatGPTSchema, ResultsForHumanSchema
+from zhei.utils.data_utils.AGIEval.constructions import ChatGPTSchema, ResultsForHumanSchema
 import os
 import ast
 from tqdm import tqdm
-from src.utils import read_jsonl, save_jsonl, extract_answer
+from zhei.utils.data_utils.AGIEval.utils import read_jsonl, save_jsonl, extract_answer
 
 # define the datasets
 english_qa_datasets = ["lsat-ar", "lsat-lr", "lsat-rc", "logiqa-en", "sat-math", "sat-en", "aqua-rat",

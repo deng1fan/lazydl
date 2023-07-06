@@ -25,7 +25,7 @@ setup(
         'nltk',
         'jsonlines',
         'omegaconf',
-        
+        'tiktoken',
     ],
     dependency_links=[
         'https://pypi.python.org/simple',
