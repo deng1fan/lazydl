@@ -2,11 +2,12 @@ from omegaconf import DictConfig, OmegaConf
 import os
 import json
 from zhei.utils.log import Logger
+from typing import Union
 
 log = Logger(__name__) 
 
 
-def init_env(config: DictConfig) -> None:
+def init_env(config: Union[DictConfig, dict]) -> None:
     """初始化环境，包括随机种子、可见GPU、Comet.ml环境变量、进程名
 
     Args:
@@ -18,6 +19,8 @@ def init_env(config: DictConfig) -> None:
             proctitle (str, optional): 进程名. Defaults to 'python'.
             proctitle_prefix_id (bool, optional): 是否在进程名前边添加进程 ID. Defaults to True.
     """
+    if isinstance(config, dict):
+        config = OmegaConf.create(config)
     OmegaConf.set_struct(config, False)
     env = config.get("env", {})
     updated_env = {}

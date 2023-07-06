@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='zhei',
-    version='0.0.6',
+    version='0.0.7',
     author='deng1fan',
     author_email='dengyifan@iie.ac.cn',
     url='https://github.com/deng1fan',
@@ -23,6 +23,9 @@ setup(
         'dingtalkchatbot',
         'psutil',
         'nltk',
+        'jsonlines',
+        'omegaconf',
+        
     ],
     dependency_links=[
         'https://pypi.python.org/simple',

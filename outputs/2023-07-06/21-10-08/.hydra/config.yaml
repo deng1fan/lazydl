@@ -1,0 +1,14 @@
+env:
+  comet_api_key: 9E7y6wGO8ohLlNBrJrwIYHByK
+  comet_project_name: Default Project
+  dingding_secret: SEC86418ce8939ca7ff3d2442ead039cec1d6cb765b01d7971e20b2c69ab2069eb3
+  dingding_access_token: 5f7199dea2b58e5c765fc3573335e0f558207ecf75304114c5015e2a6b4fed58
+  visibale_cuda: all
+  huggingface_hub_token: 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
+processing_unit: cpu
+queuing: false
+processing_unit_min_free_memory: 2
+processing_unit_min_free_memory_ratio: 0.1
+processing_unit_type: null
+task_id: No task identifier.
+task_desc: No task description.

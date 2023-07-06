@@ -5,6 +5,7 @@ from zhei.utils.notice import notice
 from zhei.utils.log import Logger
 import time
 import os
+import torch
 
 log = Logger(__name__) 
 
@@ -136,4 +137,13 @@ def update_processing_unit(processing_unit_type, processing_unit, processing_uni
         return processing_unit
     else:
         return processing_units[:min_count]
+    
+    
+def gpu_ready():
+    """判断 GPU 是否可用
+
+    Returns:
+        bool: True 表示 GPU 可用，False 表示 GPU 不可用
+    """
+    return torch.cuda.is_available() and torch.cuda.device_count() > 0
     
