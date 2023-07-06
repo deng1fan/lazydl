@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='zhei',
-    version='0.0.4',
+    version='0.0.6',
     author='deng1fan',
     author_email='dengyifan@iie.ac.cn',
     url='https://github.com/deng1fan',
@@ -20,7 +20,6 @@ setup(
         'datasets',
         'evaluate',
         'pandas',
-        'torch',
         'dingtalkchatbot',
         'psutil',
         'nltk',
