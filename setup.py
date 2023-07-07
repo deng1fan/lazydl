@@ -5,14 +5,14 @@ from setuptools import setup, find_packages
 
 setup(
     name='zhei',
-    version='0.0.7',
+    version='0.0.13',
     author='deng1fan',
     author_email='dengyifan@iie.ac.cn',
     url='https://github.com/deng1fan',
-    description=u'深度学习实验工具类',
+    description=u'Deep learning tools',
     long_description=open("README.md", "r", encoding='utf-8').read(),
     long_description_content_type="text/markdown",
-    packages=find_packages(),
+    packages=['zhei'],
     install_requires=[
         'nvitop',
         'redis',
@@ -26,10 +26,6 @@ setup(
         'jsonlines',
         'omegaconf',
         'tiktoken',
-    ],
-    dependency_links=[
-        'https://pypi.python.org/simple',
-        'http://my.company.com/pypi/',
     ],
     exclude=["*.tests", "*.tests.*", "tests"],
     include_package_data=True,

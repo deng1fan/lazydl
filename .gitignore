@@ -1,3 +1,5 @@
 build/*
 dist/*
 zhei.egg-info/*
+project_templates/outputs/*
+project_templates/*.log
