@@ -5,7 +5,10 @@ import psutil
 
 log = Logger(__name__)
 
-def notice(msg, warning=False, access_token="", secret=""):
+def notice(msg: str = "", warning=False, access_token="", secret=""):
+    """钉钉消息通知
+    
+    """
     access_token = os.environ.get('DINGDING_ACCESS_TOKEN', "") if access_token == "" else access_token
     secret = os.environ.get('DINGDING_SECRET', "") if secret == "" else secret
     if access_token == "" or secret == "":

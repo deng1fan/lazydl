@@ -6,10 +6,12 @@ from zhei.utils.log import Logger
 import time
 import os
 import torch
+from typing import Union
+from omegaconf import DictConfig
 
 log = Logger(__name__) 
 
-def set_processing_units(config: dict = {}):
+def set_processing_units(config: Union[DictConfig, dict] = {}):
     """设置处理器，支持自动选择和手动选择、排队和不排队
 
     Args:
@@ -19,9 +21,10 @@ def set_processing_units(config: dict = {}):
             processing_unit_min_free_memory: 最小空闲内存，单位为 GiB，默认为 10
             processing_unit_min_free_memory_ratio: 最小空闲内存比例，默认为 0.5
             queuing: 是否排队，依赖 Redis，默认为 False
+            visible_devices: 可见的 GPU 序号，用逗号分隔，默认为 None
 
     Returns:
-        _type_: config
+        Union[DictConfig, dict]: config
     """
     processing_unit = config.get("processing_unit", "cpu")
     processing_unit_type = config.get("processing_unit_type", "cpu")
@@ -52,7 +55,7 @@ def set_processing_units(config: dict = {}):
     # ---------------------------------------------------------------------------- #
     
     devices = Device.all()
-    visible_devices = os.environ.get("CUDA_VISIBLE_DEVICES", None)
+    visible_devices = os.environ.get("CUDA_VISIBLE_DEVICES", None) if config.get("visible_devices", None) is None else config.get("visible_devices")
     if visible_devices is not None:
         devices = [Device(index=device_id) for device_id in visible_devices.split(",")]
     

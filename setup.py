@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='zhei',
-    version='0.0.13',
+    version='0.0.16',
     author='deng1fan',
     author_email='dengyifan@iie.ac.cn',
     url='https://github.com/deng1fan',
@@ -26,6 +26,8 @@ setup(
         'jsonlines',
         'omegaconf',
         'tiktoken',
+        'setproctitle',
+        'rich',
     ],
     exclude=["*.tests", "*.tests.*", "tests"],
     include_package_data=True,

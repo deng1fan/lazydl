@@ -2,7 +2,7 @@ import sys
 import traceback
 
 
-def print_error_info(e):
+def print_error_info(e: Exception):
     """打印错误信息
 
     Args:
