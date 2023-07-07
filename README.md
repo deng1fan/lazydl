@@ -58,6 +58,7 @@ j.hi()
             processing_unit_min_free_memory: 最小空闲内存，单位为 GiB，默认为 10
             processing_unit_min_free_memory_ratio: 最小空闲内存比例，默认为 0.5
             queuing: 是否排队，依赖 Redis，默认为 False
+            visible_devices: 可见的 GPU 序号，用逗号分隔，默认为 None
 
     Returns:
         Union[DictConfig, dict]: config
