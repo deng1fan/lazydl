@@ -30,16 +30,13 @@ then
 fi
 
 # delete old dist
-echo "delete old dist"
-if is_Windows
+if $is_Windows
 then
-    echo "Windows, git-bash"
+    echo "delete old dist on Windows, git-bash"
     rmdir dist build zhei.egg-info /s /q
 else
-    echo "Mac OS X or GNU/Linux"
-    rm -rf dist
-    rm -rf build
-    rm -rf *.egg-info
+    echo "delete old dist on Mac OS X or GNU/Linux"
+    rm -rf dist build *.egg-info
 fi
 
 
@@ -49,14 +46,11 @@ twine upload dist/*
 
 
 # delete dist
-echo "delete dist"
-if is_Windows
+if $is_Windows
 then
-    echo "Windows, git-bash"
+    echo "delete dist on Windows, git-bash"
     rmdir dist build zhei.egg-info /s /q
 else
-    echo "Mac OS X or GNU/Linux"
-    rm -rf dist
-    rm -rf build
-    rm -rf *.egg-info
+    echo "delete dist on Mac OS X or GNU/Linux"
+    rm -rf dist build *.egg-info
 fi
