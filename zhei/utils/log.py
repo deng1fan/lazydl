@@ -1,7 +1,6 @@
 import logging
 import sys
 import os
-import torch.distributed as dist
 import inspect
 import time
 

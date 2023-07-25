@@ -5,14 +5,14 @@ from setuptools import setup, find_packages
 
 setup(
     name='zhei',
-    version='0.0.18',
+    version='0.0.21',
     author='deng1fan',
     author_email='dengyifan@iie.ac.cn',
     url='https://github.com/deng1fan',
     description=u'Deep learning tools',
     long_description=open("README.md", "r", encoding='utf-8').read(),
     long_description_content_type="text/markdown",
-    packages=['zhei'],
+    packages=find_packages(),
     install_requires=[
         'nvitop',
         'redis',

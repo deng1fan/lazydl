@@ -6,3 +6,4 @@ from zhei.utils.processing_unit import *
 from zhei.utils.result import *
 from zhei.utils.dataset import *
 from zhei.utils.tokenize import *
+from zhei.utils.load_class import *
