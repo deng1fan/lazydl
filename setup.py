@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='zhei',
-    version='0.0.21',
+    version='0.0.22',
     author='deng1fan',
     author_email='dengyifan@iie.ac.cn',
     url='https://github.com/deng1fan',

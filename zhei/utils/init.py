@@ -3,6 +3,9 @@ import os
 import json
 from zhei.utils.log import Logger
 from typing import Union
+import comet_ml
+import sys
+import hashlib
 
 log = Logger(__name__) 
 
@@ -11,30 +14,35 @@ def init_env(config: Union[DictConfig, dict]) -> None:
     """初始化环境，包括随机种子、可见GPU、Comet.ml环境变量、进程名
 
     Args:
-        config (DictConfig): 配置文件
+        config (DictConfig, dict): 配置文件
             seed (str, optional): 种子. Defaults to '3407'.
             use_deterministic (bool, optional): 是否使用确定性算法，使用了训练会变慢. Defaults to False.
             visibale_cuda (str, optional): 设置可见 GPU，如果不使用设置为 ''. Defaults to 'all'.
-            comet_exp (dict, optional): Comet.ml相关环境变量设置. Defaults to {}.
             proctitle (str, optional): 进程名. Defaults to 'python'.
             proctitle_prefix_id (bool, optional): 是否在进程名前边添加进程 ID. Defaults to True.
     """
     if isinstance(config, dict):
         config = OmegaConf.create(config)
     OmegaConf.set_struct(config, False)
-    env = config.get("env", {})
     updated_env = {}
+    
+    # ---------------------------------------------------------------------------- #
+    #                         生成 Task ID                                     
+    # ---------------------------------------------------------------------------- #
+    config.task_id = "{}@{}".format(config.get("task_id", "No task identifier."), os.getpid())
+    
+    
     # ---------------------------------------------------------------------------- #
     #                         设置可见 GPU                                                          
     # ---------------------------------------------------------------------------- #
-    if env.get("env.visibale_cuda", "all") != "all":
-        os.environ['CUDA_VISIBLE_DEVICES'] = env.get("visibale_cuda")
+    if config.get("env.visibale_cuda", "all") != "all":
+        os.environ['CUDA_VISIBLE_DEVICES'] = config.get("visibale_cuda")
         updated_env['CUDA_VISIBLE_DEVICES'] = os.environ['CUDA_VISIBLE_DEVICES']
     
     # ---------------------------------------------------------------------------- #
     #                         设置随机种子                                           
     # ---------------------------------------------------------------------------- #
-    seed = env.get("seed", 3407)
+    seed = config.get("seed", 3407)
     use_deterministic = config.get("use_deterministic", False)
     import random
     import numpy as np
@@ -49,50 +57,58 @@ def init_env(config: Union[DictConfig, dict]) -> None:
     torch.backends.cudnn.benchmark = not use_deterministic # if benchmark=True, deterministic will be False
     torch.backends.cudnn.deterministic = use_deterministic   # 选择确定性算法
     
-    # ---------------------------------------------------------------------------- #
-    #                         设置 Comet.ml 环境变量                                     
-    # ---------------------------------------------------------------------------- #
-    os.environ["COMET_API_KEY"] = env.get("comet_api_key", "")
-    os.environ["COMET_PROJECT_NAME"] = env.get("comet_project_name", "Default Project")
-    os.environ["COMET_AUTO_LOG_ENV_CPU"] = env.get("comet_auto_log_env_cpu", "False")
-    os.environ["COMET_AUTO_LOG_ENV_GPU"] = env.get("comet_auto_log_env_gpu", "False")
-    os.environ["COMET_AUTO_LOG_ENV_DETAILS"] = env.get("comet_auto_log_env_details", "False")
-    os.environ["COMET_AUTO_LOG_CO2"] = env.get("comet_auto_log_co2", "False")
-    os.environ["COMET_AUTO_LOG_GIT_METADATA"] = env.get("comet_auto_log_git_metadata", "False")
-    os.environ["COMET_AUTO_LOG_GIT_PATCH"] = env.get("comet_auto_log_git_patch", "False")
+    # # ---------------------------------------------------------------------------- #
+    # #                         设置 Comet.ml 环境变量                                     
+    # # ---------------------------------------------------------------------------- #
+    os.environ["COMET_API_KEY"] = config.get("comet_api_key", "")
     
     updated_env['COMET_API_KEY'] = os.environ['COMET_API_KEY']
-    updated_env['COMET_PROJECT_NAME'] = os.environ['COMET_PROJECT_NAME']
-    updated_env['COMET_AUTO_LOG_ENV_CPU'] = os.environ['COMET_AUTO_LOG_ENV_CPU']
-    updated_env['COMET_AUTO_LOG_ENV_GPU'] = os.environ['COMET_AUTO_LOG_ENV_GPU']
-    updated_env['COMET_AUTO_LOG_ENV_DETAILS'] = os.environ['COMET_AUTO_LOG_ENV_DETAILS']
-    updated_env['COMET_AUTO_LOG_CO2'] = os.environ['COMET_AUTO_LOG_CO2']
-    updated_env['COMET_AUTO_LOG_GIT_METADATA'] = os.environ['COMET_AUTO_LOG_GIT_METADATA']
-    updated_env['COMET_AUTO_LOG_GIT_PATCH'] = os.environ['COMET_AUTO_LOG_GIT_PATCH']
     
+    # ---------------------------------------------------------------------------- #
+    #                         设置 Comet Project                                     
+    # ---------------------------------------------------------------------------- #
+    api = comet_ml.api.API()
+    experiment = api.get_experiment_by_key(config.get("task_id", "No task identifier."))
+    
+    if experiment is None:
+        experiment = comet_ml.Experiment(project_name=config.get("comet_project", "No comet project."),
+                                         experiment_key=config.get("task_id", "No task identifier."),)
+        experiment.set_name(config.get("comet_name", "Null name"))
+        
+        experiment_config = sys.argv[-1].replace("+experiments=", "")
+
+    
+    tmux_session = "/"
+    for arg in sys.argv:
+        if "tmux_session" in arg:
+            tmux_session = arg.replace("+tmux_session=", "")
+            
+    experiment.log_other("tmux_session", tmux_session)
+    experiment.log_other("进程ID", str(os.getpid()))
+    experiment.log_other("实验配置文件", experiment_config)
+    for key, value in config.items():
+        if isinstance(value, dict):
+            value = json.dumps(value)
+        experiment.log_other(key, str(value))
+    for tag in config.get("comet_tags", []):
+        experiment.add_tag(tag)
+    
+    config.comet = experiment
     
     # ---------------------------------------------------------------------------- #
     #                         设置钉钉 Token                                     
     # ---------------------------------------------------------------------------- #
-    os.environ["DINGDING_ACCESS_TOKEN"] = env.get("dingding_access_token", "")
-    os.environ["DINGDING_SECRET"] = env.get("dingding_secret", "")
+    os.environ["DINGDING_ACCESS_TOKEN"] = config.get("dingding_access_token", "")
+    os.environ["DINGDING_SECRET"] = config.get("dingding_secret", "")
     
     updated_env['DINGDING_ACCESS_TOKEN'] = os.environ['DINGDING_ACCESS_TOKEN']
     updated_env['DINGDING_SECRET'] = os.environ['DINGDING_SECRET']
     
-    
-    # ---------------------------------------------------------------------------- #
-    #                         设置任务相关环境变量                                     
-    # ---------------------------------------------------------------------------- #
-    os.environ["TASK_DESC"] = config.get("task_desc", "No task description.")
-    os.environ["TASK_ID"] = config.get("task_id", "No task identifier.")
-    updated_env['TASK_DESC'] = os.environ['TASK_DESC']
-    updated_env['TASK_ID'] = os.environ['TASK_ID']
         
     # ---------------------------------------------------------------------------- #
     #                         设置其他环境变量                                     
     # ---------------------------------------------------------------------------- #
-    os.environ["TOKENIZERS_PARALLELISM"] = env.get("tokenizers_parallelism", "False")
+    os.environ["TOKENIZERS_PARALLELISM"] = config.get("tokenizers_parallelism", "False")
     updated_env['TOKENIZERS_PARALLELISM'] = os.environ['TOKENIZERS_PARALLELISM']
     
     

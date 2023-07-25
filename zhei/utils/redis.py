@@ -32,7 +32,7 @@ class RedisClient:
             return set(all_gpus)
         return [json.loads(g) for g in self_occupied_gpus.values()]
 
-    def join_wait_queue(self, processing_unit_type, processing_unit, units_count):
+    def join_wait_queue(self, processing_unit_type, processing_unit, units_count, memo):
         """
         加入等待队列
         """
@@ -51,9 +51,7 @@ class RedisClient:
             "update_time": creat_time,
             "system_pid": os.getpid(),
             "task_id": task_id,
-            "task_desc": os.environ.get("TASK_DESC", "No task description."),
-            "task_id": os.environ.get("TASK_ID", "No task identifier."),
-            "comet_project": os.environ.get("COMET_PROJECT_NAME", "No comet project."),
+            "task_desc": memo,
         }
         wait_num = len(self.client.lrange("wait_queue", 0, -1))
         self.client.rpush("wait_queue", json.dumps(content))
@@ -95,7 +93,7 @@ class RedisClient:
         next_task = self.client.lpop("wait_queue")
         return next_task
 
-    def register_gpus(self, task_id, processing_unit_type, processing_unit, units_count):
+    def register_gpus(self, task_id, processing_unit_type, processing_unit, units_count, memo):
         """
         将当前训练任务登记到GPU占用信息中
         """
@@ -118,9 +116,7 @@ class RedisClient:
             "update_time": creat_time,
             "system_pid": os.getpid(),
             "task_id": task_id,
-            "task_desc": os.environ.get("TASK_DESC", "No task description."),
-            "task_id": os.environ.get("TASK_ID", "No task identifier."),
-            "comet_project": os.environ.get("COMET_PROJECT_NAME", "No comet project."),
+            "task_desc": memo,
         }
         self.client.hset("self_occupied_gpus", task_id, json.dumps(content))
         log.info("成功登记Gpu使用信息到Redis服务器！")
@@ -137,7 +133,7 @@ class RedisClient:
         else:
             log.info("无法找到当前训练任务在Redis服务器上的Gpu使用信息！或许可以考虑检查一下Redis的数据 🤔")
 
-    def register_process(self, task_id, processing_unit_type, processing_unit, units_count):
+    def register_process(self, task_id, processing_unit_type, processing_unit, units_count, memo):
         """
         将当前训练任务登记到进程信息中
         """
@@ -160,9 +156,7 @@ class RedisClient:
             "update_time": creat_time,
             "system_pid": os.getpid(),
             "task_id": task_id,
-            "task_desc": os.environ.get("TASK_DESC", "No task description."),
-            "task_id": os.environ.get("TASK_ID", "No task identifier."),
-            "comet_project": os.environ.get("COMET_PROJECT_NAME", "No comet project."),
+            "task_desc": memo,
         }
         self.client.hset("running_processes", task_id, json.dumps(content))
         log.info("成功登记进程使用信息到Redis服务器！")
