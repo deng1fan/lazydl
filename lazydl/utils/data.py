@@ -84,7 +84,7 @@ def load_AGIEval(dir: str = None, prompt_path: str = None, *args, **kargs):
     
     """
     print("AGIEval 数据集正在开发中...")
-    from zhei.utils.data_utils.AGIEval import post_process, utils, dataset_loader
+    from lazydl.utils.data_utils.AGIEval import post_process, utils, dataset_loader
     dataset_name_list = [
         "aqua-rat",
         "math",

@@ -1,6 +1,6 @@
 from importlib import import_module
-from zhei.utils.log import Logger
-from zhei.utils.catch_error import print_error_info
+from lazydl.utils.log import Logger
+from lazydl.utils.catch_error import print_error_info
 
 log = Logger(__name__)
 

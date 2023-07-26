@@ -1,8 +1,8 @@
 from nvitop import select_devices, Device
 import sys
-from zhei.utils.redis import RedisClient
-from zhei.utils.notice import notice
-from zhei.utils.log import Logger
+from lazydl.utils.redis import RedisClient
+from lazydl.utils.notice import notice
+from lazydl.utils.log import Logger
 import time
 import os
 import torch

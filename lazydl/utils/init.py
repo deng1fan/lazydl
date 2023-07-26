@@ -1,7 +1,7 @@
 from omegaconf import DictConfig, OmegaConf
 import os
 import json
-from zhei.utils.log import Logger
+from lazydl.utils.log import Logger
 from typing import Union
 import comet_ml
 import sys

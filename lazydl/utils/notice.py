@@ -1,6 +1,6 @@
 from dingtalkchatbot.chatbot import DingtalkChatbot
 import os
-from zhei.utils.log import Logger
+from lazydl.utils.log import Logger
 import psutil
 
 log = Logger(__name__)

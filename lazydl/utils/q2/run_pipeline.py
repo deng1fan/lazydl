@@ -18,8 +18,8 @@ import numpy as np
 import pandas as pd
 import spacy
 
-import zhei.utils.q2.question_generation as qg
-import zhei.utils.q2.question_answering as qa
+import lazydl.utils.q2.question_generation as qg
+import lazydl.utils.q2.question_answering as qa
 from score import f1_score, clean_text
 from tqdm import tqdm
 from transformers import AutoModelWithLMHead, AutoTokenizer, AutoModelForQuestionAnswering

@@ -4,8 +4,8 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='zhei',
-    version='0.0.22',
+    name='lazydl',
+    version='0.0.1',
     author='deng1fan',
     author_email='dengyifan@iie.ac.cn',
     url='https://github.com/deng1fan',

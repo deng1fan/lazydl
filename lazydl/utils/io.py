@@ -1,4 +1,4 @@
-from zhei.utils.log import Logger
+from lazydl.utils.log import Logger
 import os
 import pickle
 import json

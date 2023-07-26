@@ -3,7 +3,7 @@ import os
 import datetime
 import time
 from redis import Redis
-from zhei.utils.log import Logger
+from lazydl.utils.log import Logger
 
 log = Logger(__name__) 
 
