@@ -1,14 +1,16 @@
+本仓库旨在方便快速地为深度学习项目提供便捷功能，例如钉钉通知、快捷配置、批量实验、GPU排队等等
+
 # 安装
 ```bash
-pip install zhei
+pip install lazydl -i https://pypi.org/simple 
 ```
 
 
 # 使用
 ```python
-import zhei as j
+import lazydl as l
 
-j.hi()
+l.hi()
 ```
 
 
@@ -45,7 +47,7 @@ j.hi()
             proctitle_prefix_id (bool, optional): 是否在进程名前边添加进程 ID. Defaults to True.
     ```
 
-### 处理器
+### GPU 自动选择、排队
 - gpu_ready())：检查 GPU 是否可用
 - set_processing_units(config: Union[DictConfig, dict] = {})：设置处理器
     ```
