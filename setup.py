@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='lazydl',
-    version='0.0.1',
+    version='0.0.4',
     author='deng1fan',
     author_email='dengyifan@iie.ac.cn',
     url='https://github.com/deng1fan',
@@ -28,9 +28,11 @@ setup(
         'tiktoken',
         'setproctitle',
         'rich',
+        'comet_ml',
+        'hydra_colorlog',
     ],
     exclude=["*.tests", "*.tests.*", "tests"],
     include_package_data=True,
     python_requires='>=3.6',
-    keywords=['zhei', 'deep learning', 'pytorch'],
+    keywords=['lazydl', 'deep learning', 'pytorch'],
 )

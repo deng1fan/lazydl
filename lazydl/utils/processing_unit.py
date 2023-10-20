@@ -63,7 +63,7 @@ def set_processing_units(config: Union[DictConfig, dict] = {}):
             devices=devices,
             format="index",
             min_count=min_count,
-            min_free_memory=config.get("processing_unit_min_free_memory", "10") +  + "GiB",
+            min_free_memory=str(config.get("processing_unit_min_free_memory", "10")) + "GiB",
             max_memory_utilization=config.get("processing_unit_min_free_memory_ratio", "0.5"),
     )
     

@@ -1,11 +1,12 @@
+import comet_ml
 from omegaconf import DictConfig, OmegaConf
 import os
 import json
 from lazydl.utils.log import Logger
 from typing import Union
-import comet_ml
 import sys
-import hashlib
+import datetime
+import numpy
 
 log = Logger(__name__) 
 
@@ -29,7 +30,8 @@ def init_env(config: Union[DictConfig, dict]) -> None:
     # ---------------------------------------------------------------------------- #
     #                         生成 Task ID                                     
     # ---------------------------------------------------------------------------- #
-    config.task_id = "{}@{}".format(config.get("task_id", "No task identifier."), os.getpid())
+    task_id_prefix = config.get("task_id") if config.get("task_id") else datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+    config.task_id = "{}{}{}".format(task_id_prefix, ''.join([str(num) for num in numpy.random.randint(0, 9, size=18)]), os.getpid())
     
     
     # ---------------------------------------------------------------------------- #
@@ -57,10 +59,10 @@ def init_env(config: Union[DictConfig, dict]) -> None:
     torch.backends.cudnn.benchmark = not use_deterministic # if benchmark=True, deterministic will be False
     torch.backends.cudnn.deterministic = use_deterministic   # 选择确定性算法
     
-    # # ---------------------------------------------------------------------------- #
-    # #                         设置 Comet.ml 环境变量                                     
-    # # ---------------------------------------------------------------------------- #
-    os.environ["COMET_API_KEY"] = config.get("comet_api_key", "")
+    # ---------------------------------------------------------------------------- #
+    #                         设置 Comet.ml 环境变量                                     
+    # ---------------------------------------------------------------------------- #
+    os.environ["COMET_API_KEY"] = "" if config.get("comet_api_key") is None else config.get("comet_api_key")
     
     updated_env['COMET_API_KEY'] = os.environ['COMET_API_KEY']
     
@@ -68,11 +70,11 @@ def init_env(config: Union[DictConfig, dict]) -> None:
     #                         设置 Comet Project                                     
     # ---------------------------------------------------------------------------- #
     api = comet_ml.api.API()
-    experiment = api.get_experiment_by_key(config.get("task_id", "No task identifier."))
+    experiment = api.get_experiment_by_key(config.get("task_id"))
     
     if experiment is None:
         experiment = comet_ml.Experiment(project_name=config.get("comet_project", "No comet project."),
-                                         experiment_key=config.get("task_id", "No task identifier."),)
+                                         experiment_key=config.get("task_id"),)
         experiment.set_name(config.get("comet_name", "Null name"))
         
         experiment_config = sys.argv[-1].replace("+experiments=", "")
@@ -93,13 +95,13 @@ def init_env(config: Union[DictConfig, dict]) -> None:
     for tag in config.get("comet_tags", []):
         experiment.add_tag(tag)
     
-    config.comet = experiment
+    # config.comet = experiment
     
     # ---------------------------------------------------------------------------- #
     #                         设置钉钉 Token                                     
     # ---------------------------------------------------------------------------- #
-    os.environ["DINGDING_ACCESS_TOKEN"] = config.get("dingding_access_token", "")
-    os.environ["DINGDING_SECRET"] = config.get("dingding_secret", "")
+    os.environ["DINGDING_ACCESS_TOKEN"] = config.get("dingding_access_token") if config.get("dingding_access_token") else "NONE_DINGDING_ACCESS_TOKEN"
+    os.environ["DINGDING_SECRET"] = config.get("dingding_secret") if config.get("dingding_secret") else "NONE_DINGDING_SECRET"
     
     updated_env['DINGDING_ACCESS_TOKEN'] = os.environ['DINGDING_ACCESS_TOKEN']
     updated_env['DINGDING_SECRET'] = os.environ['DINGDING_SECRET']
@@ -141,7 +143,7 @@ def init_env(config: Union[DictConfig, dict]) -> None:
         if "^" in processing_unit:
             # 自动选择 GPU
             processing_unit = int(processing_unit.replace("^", ""))
-            if processing_unit >= torch.cuda.device_count():
+            if processing_unit > torch.cuda.device_count():
                 log.error("The number of GPUs you specified is greater than the number of GPUs available.")
                 raise Exception("The number of GPUs you specified is greater than the number of GPUs available.")
             if processing_unit > 1:
@@ -162,4 +164,4 @@ def init_env(config: Union[DictConfig, dict]) -> None:
     log.info(f"Processing unit type: {config.get('processing_unit_type')}")
     log.info(f"Processing unit: {config.get('processing_unit')}")
     
-    return config
+    return config, experiment
