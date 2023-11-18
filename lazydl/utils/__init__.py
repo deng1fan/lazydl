@@ -7,3 +7,7 @@ from lazydl.utils.result import *
 from lazydl.utils.dataset import *
 from lazydl.utils.tokenize import *
 from lazydl.utils.load_class import *
+from lazydl.utils.hf_util import *
+from lazydl.utils.trainer import *
+from lazydl.utils.loss import *
+from lazydl.utils.model_wrapper import *

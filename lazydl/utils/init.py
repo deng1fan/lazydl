@@ -4,14 +4,13 @@ import os
 import json
 from lazydl.utils.log import Logger
 from typing import Union
-import sys
 import datetime
 import numpy
 
 log = Logger(__name__) 
 
 
-def init_env(config: Union[DictConfig, dict]) -> None:
+def init_env(config: Union[DictConfig, dict], current_dir: str = "./") -> None:
     """初始化环境，包括随机种子、可见GPU、Comet.ml环境变量、进程名
 
     Args:
@@ -26,6 +25,11 @@ def init_env(config: Union[DictConfig, dict]) -> None:
         config = OmegaConf.create(config)
     OmegaConf.set_struct(config, False)
     updated_env = {}
+    
+    config.root_dir = current_dir
+    if config.get("stage", "debug") == "debug":
+        log.info("Debug mode will set fast_dev_run to True")
+        config.fast_dev_run = True
     
     # ---------------------------------------------------------------------------- #
     #                         生成 Task ID                                     
@@ -69,33 +73,34 @@ def init_env(config: Union[DictConfig, dict]) -> None:
     # ---------------------------------------------------------------------------- #
     #                         设置 Comet Project                                     
     # ---------------------------------------------------------------------------- #
-    api = comet_ml.api.API()
-    experiment = api.get_experiment_by_key(config.get("task_id"))
-    
-    if experiment is None:
-        experiment = comet_ml.Experiment(project_name=config.get("comet_project", "No comet project."),
-                                         experiment_key=config.get("task_id"),)
-        experiment.set_name(config.get("comet_name", "Null name"))
+    experiment = None
+    if config.get("start_comet_log", "False"):
+        api = comet_ml.api.API()
+        experiment = api.get_experiment_by_key(config.get("task_id"))
         
-        experiment_config = sys.argv[-1].replace("+experiments=", "")
-
-    
-    tmux_session = "/"
-    for arg in sys.argv:
-        if "tmux_session" in arg:
-            tmux_session = arg.replace("+tmux_session=", "")
+        if experiment is None:
+            experiment = comet_ml.Experiment(project_name=config.get("comet_project_name", "no-comet-project"),
+                                            experiment_key=config.get("task_id"),)
+            experiment.set_name(config.get("comet_exp_name", "NULL") + "_" + config.get("stage", "debug"))
             
-    experiment.log_other("tmux_session", tmux_session)
-    experiment.log_other("进程ID", str(os.getpid()))
-    experiment.log_other("实验配置文件", experiment_config)
-    for key, value in config.items():
-        if isinstance(value, dict):
-            value = json.dumps(value)
-        experiment.log_other(key, str(value))
-    for tag in config.get("comet_tags", []):
-        experiment.add_tag(tag)
-    
-    # config.comet = experiment
+            experiment_config = sys.argv[-1].replace("+experiments=", "")
+
+        
+        tmux_session = "/"
+        for arg in sys.argv:
+            if "tmux_session" in arg:
+                tmux_session = arg.replace("+tmux_session=", "")
+                
+        experiment.log_other("tmux_session", tmux_session)
+        experiment.log_other("进程ID", str(os.getpid()))
+        experiment.log_other("实验配置文件", experiment_config)
+        for key, value in config.items():
+            if isinstance(value, dict):
+                value = json.dumps(value)
+            experiment.log_other(key, str(value))
+        for tag in config.get("comet_tags", []):
+            experiment.add_tag(tag)
+        log.info("Comet 实验记录已启动")
     
     # ---------------------------------------------------------------------------- #
     #                         设置钉钉 Token                                     
@@ -162,6 +167,7 @@ def init_env(config: Union[DictConfig, dict]) -> None:
         config.processing_unit = processing_unit
         
     log.info(f"Processing unit type: {config.get('processing_unit_type')}")
-    log.info(f"Processing unit: {config.get('processing_unit')}")
+    log.info(f"Processing unit num: {config.get('processing_unit')}\n")
     
     return config, experiment
+

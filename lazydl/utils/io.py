@@ -57,7 +57,7 @@ def save_as(data, save_path, file_format="pt", data_name="", protocol=4):
 
     Args:
         data: obj, 要保存的文件对象
-        save_path: str, 文件的保存路径，应当包含文件名和后缀名
+        save_path: str, 文件的保存路径，应当包含文件名
         data_name: str, 打印提示时需要，便于控制台查看保存的文件是什么文件, 默认为空
         protocol: int, 当文件特别大的时候，需要将此参数调到4以上, 默认为4
         file_format: str, 要保存的文件类型，支持‘pkl’、‘txt’、‘pt’、‘json’、‘jsonl’

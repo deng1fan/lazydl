@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='lazydl',
-    version='0.0.5',
+    version='0.1.3',
     author='deng1fan',
     author_email='dengyifan@iie.ac.cn',
     url='https://github.com/deng1fan',
@@ -25,11 +25,12 @@ setup(
         'nltk',
         'jsonlines',
         'omegaconf',
-        'tiktoken',
         'setproctitle',
         'rich',
         'comet_ml',
         'hydra_colorlog',
+        'peft',
+        'bitsandbytes',
     ],
     exclude=["*.tests", "*.tests.*", "tests"],
     include_package_data=True,
