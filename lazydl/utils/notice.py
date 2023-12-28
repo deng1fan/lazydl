@@ -27,3 +27,5 @@ def notice(msg: str = "", warning=False, access_token="", secret=""):
     xiaoding = DingtalkChatbot(webhook, secret=secret, pc_slide=True)
     # Text消息@所有人
     xiaoding.send_text(msg=msg)
+    log.info(f"已将下面通知发送到钉钉！")
+    log.info(msg)

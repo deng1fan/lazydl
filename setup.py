@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='lazydl',
-    version='0.1.3',
+    version='0.2.0',
     author='deng1fan',
     author_email='dengyifan@iie.ac.cn',
     url='https://github.com/deng1fan',
@@ -31,6 +31,9 @@ setup(
         'hydra_colorlog',
         'peft',
         'bitsandbytes',
+        'bert_score',
+        'rouge',
+        'sacrebleu'    
     ],
     exclude=["*.tests", "*.tests.*", "tests"],
     include_package_data=True,

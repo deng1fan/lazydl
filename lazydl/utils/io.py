@@ -19,6 +19,8 @@ def load_in(path, data_name=""):
     Returns:
         data：Object
     """
+    if data_name == "":
+        data_name = path.split("/")[-1]
     if not os.path.exists(path):
         log.info(f"文件路径似乎并不存在....")
         raise FileNotFoundError(path)
@@ -27,9 +29,15 @@ def load_in(path, data_name=""):
         with open(path, "rb") as f:
             data = pickle.load(f)
     elif ".json" in path:
-        with open(path, "r") as f:
-            # 读取json数据
-            data = json.load(f)
+        data = []
+        try: 
+            file = open(path, "r", encoding="utf-8")
+            for line in file.readlines():
+                data.append(json.loads(line))
+        except:
+            with open(path, "r") as f:
+                # 读取json数据
+                data = json.load(f)
     elif ".jsonl" in path:
         data = []
         with open(path, "rb") as f:
@@ -50,7 +58,7 @@ def load_in(path, data_name=""):
     return data
 
 
-def save_as(data, save_path, file_format="pt", data_name="", protocol=4):
+def save_as(data, save_path, data_name="", protocol=4):
     """将参数中的文件对象保存为指定格式格式文件
         目前支持保存类型有：‘pkl’、‘txt’、‘pt’、‘json’, 'jsonl'
         默认为‘pt’
@@ -60,16 +68,17 @@ def save_as(data, save_path, file_format="pt", data_name="", protocol=4):
         save_path: str, 文件的保存路径，应当包含文件名
         data_name: str, 打印提示时需要，便于控制台查看保存的文件是什么文件, 默认为空
         protocol: int, 当文件特别大的时候，需要将此参数调到4以上, 默认为4
-        file_format: str, 要保存的文件类型，支持‘pkl’、‘txt’、‘pt’、‘json’、‘jsonl’
 
     Returns:
-        None
+        save_path
     """
+    if data_name == "":
+        data_name = save_path.split("/")[-1]
+    file_format = save_path.split(".")[-1]
     parent_path = "/".join(save_path.split("/")[:-1])
     if not os.path.exists(parent_path):
         log.info(f"保存路径的父文件夹（{parent_path}）不存在，将自动创建....")
         os.makedirs(parent_path)
-    save_path = save_path + f".{file_format}"
     log.info(f"正在保存文件 {data_name} 到 {save_path}")
     if file_format == "pkl":
         with open(save_path, "wb") as f:
@@ -91,4 +100,4 @@ def save_as(data, save_path, file_format="pt", data_name="", protocol=4):
     else:
         raise Exception(f"请添加针对{file_format}类型文件的保存方法！")
     log.info(f"保存 {data_name} 成功!")
-    return None
+    return save_path

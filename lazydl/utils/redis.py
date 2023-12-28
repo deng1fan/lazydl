@@ -21,21 +21,22 @@ class RedisClient:
         """
         获取自己已经占用的Gpu序号
         """
-        self_occupied_gpus = self.client.hgetall("self_occupied_gpus")
+        self_occupied_gpus = self.client.hgetall("running_processes")
         if only_gpus:
             all_gpus = []
             for task in self_occupied_gpus.values():
                 gpus = [
-                    int(device) for device in str(json.loads(task)["cuda_devices"]).split(",")
+                    int(device) for device in str(json.loads(task)["processing_unit"]).split(",")
                 ]
                 all_gpus.extend(gpus)
-            return set(all_gpus)
+            return list(set(all_gpus))
         return [json.loads(g) for g in self_occupied_gpus.values()]
 
     def join_wait_queue(self, processing_unit_type, processing_unit, units_count, memo):
         """
         加入等待队列
         """
+        processing_unit = [str(gpu) for gpu in processing_unit]
         curr_time = datetime.datetime.now()
         creat_time = datetime.datetime.strftime(curr_time, "%Y-%m-%d %H:%M:%S")
         task_id = (
@@ -45,7 +46,7 @@ class RedisClient:
         )
         content = {
             "processing_unit_type": processing_unit_type,
-            "processing_unit": processing_unit,
+            "processing_unit": ",".join(processing_unit),
             "units_count": units_count,
             "create_time": creat_time,
             "update_time": creat_time,
@@ -97,6 +98,7 @@ class RedisClient:
         """
         将当前训练任务登记到GPU占用信息中
         """
+        processing_unit = [str(gpu) for gpu in processing_unit]
         curr_time = datetime.datetime.now()
         creat_time = datetime.datetime.strftime(curr_time, "%Y-%m-%d %H:%M:%S")
         if not task_id:
@@ -110,7 +112,7 @@ class RedisClient:
 
         content = {
             "processing_unit_type": processing_unit_type,
-            "processing_unit": processing_unit,
+            "processing_unit": ",".join(processing_unit),
             "units_count": units_count,
             "create_time": creat_time,
             "update_time": creat_time,
@@ -137,6 +139,7 @@ class RedisClient:
         """
         将当前训练任务登记到进程信息中
         """
+        processing_unit = [str(gpu) for gpu in processing_unit]
         curr_time = datetime.datetime.now()
         creat_time = datetime.datetime.strftime(curr_time, "%Y-%m-%d %H:%M:%S")
         if not task_id:
@@ -150,7 +153,7 @@ class RedisClient:
 
         content = {
             "processing_unit_type": processing_unit_type,
-            "processing_unit": processing_unit,
+            "processing_unit": ",".join(processing_unit),
             "units_count": units_count,
             "create_time": creat_time,
             "update_time": creat_time,

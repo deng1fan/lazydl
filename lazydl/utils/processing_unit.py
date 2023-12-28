@@ -1,5 +1,4 @@
 from nvitop import select_devices, Device
-import sys
 from lazydl.utils.redis import RedisClient
 from lazydl.utils.notice import notice
 from lazydl.utils.log import Logger
@@ -22,6 +21,7 @@ def set_processing_units(config: Union[DictConfig, dict] = {}):
             processing_unit_min_free_memory_ratio: 最小空闲内存比例，默认为 0.5
             queuing: 是否排队，依赖 Redis，默认为 False
             visible_devices: 可见的 GPU 序号，用逗号分隔，默认为 None
+            memo: 备注
 
     Returns:
         Union[DictConfig, dict]: config
@@ -30,6 +30,8 @@ def set_processing_units(config: Union[DictConfig, dict] = {}):
     processing_unit_type = config.get("processing_unit_type", "cpu")
     if processing_unit in ["cpu", "mps"]:
         # CPU 或 MPS 模式，直接返回
+        redis_client.register_gpus(task_id, processing_unit_type, processing_unit, units_count=min_count, memo=config.get("memo", "no memo"))
+        redis_client.register_process(task_id, processing_unit_type, processing_unit, units_count=min_count, memo=config.get("memo", "no memo"))
         return config
     
     # ---------------------------------------------------------------------------- #
@@ -48,6 +50,8 @@ def set_processing_units(config: Union[DictConfig, dict] = {}):
         # 不排队，且手动选择 GPU，直接返回，无需更新
         log.warning("Using manual GPU selection, no need to update processing unit.")
         log.warning("To avoid this warning, set queuing (requirements redis) to True.")
+        redis_client.register_gpus(task_id, processing_unit_type, processing_unit, units_count=min_count, memo=config.get("memo", "no memo"))
+        redis_client.register_process(task_id, processing_unit_type, processing_unit, units_count=min_count, memo=config.get("memo", "no memo"))
         return config
     
     # ---------------------------------------------------------------------------- #
@@ -55,9 +59,16 @@ def set_processing_units(config: Union[DictConfig, dict] = {}):
     # ---------------------------------------------------------------------------- #
     
     devices = Device.all()
-    visible_devices = os.environ.get("CUDA_VISIBLE_DEVICES", None) if config.get("visible_devices", None) is None else config.get("visible_devices")
-    if visible_devices is not None:
-        devices = [Device(index=device_id) for device_id in visible_devices.split(",")]
+    visible_devices = os.environ.get("CUDA_VISIBLE_DEVICES", None) if not config.get("visible_cuda", None) else config.get("visible_cuda")
+    visible_devices = str(visible_devices)
+    if visible_devices:
+        devices = [Device(index=int(device_id)) for device_id in visible_devices.split(",")]
+    
+    redis_client = RedisClient()
+    
+    self_occupied_gpus = redis_client.get_self_occupied_gpus()
+
+    devices = [device for device in devices if device.index not in self_occupied_gpus]
     
     processing_units = select_devices(
             devices=devices,
@@ -66,56 +77,72 @@ def set_processing_units(config: Union[DictConfig, dict] = {}):
             min_free_memory=str(config.get("processing_unit_min_free_memory", "10")) + "GiB",
             max_memory_utilization=config.get("processing_unit_min_free_memory_ratio", "0.5"),
     )
+    if isinstance(processing_unit, int):
+        processing_unit = processing_units[:processing_unit]
     
     task_id, wait_num = None, None
-    redis_client = RedisClient()
     # ---------------------------------------------------------------------------- #
     #                         如果需要排队就送入队列                                     
     # ---------------------------------------------------------------------------- #
     if not is_processing_units_ready(processing_unit_type, processing_unit, processing_units, min_count):
         if queuing:
-            task_id, wait_num = redis_client.join_wait_queue(processing_unit_type, processing_unit, units_count=min_count)
+            task_id, wait_num = redis_client.join_wait_queue(processing_unit_type, processing_unit, units_count=min_count, memo=config.get("memo", "no memo"))
         else:
             log.error("No enough processing units are available, please wait for a moment or turn on queuing mode.")
             notice("No enough processing units are available, please wait for a moment or turn on queuing mode.")
             raise Exception("No enough processing units are available, please wait for a moment or turn on queuing mode.")
     else:
         config.processing_unit = update_processing_unit(processing_unit_type, processing_unit, processing_units, min_count)
+        redis_client.register_gpus(task_id, processing_unit_type, processing_unit, units_count=min_count, memo=config.get("memo", "no memo"))
+        redis_client.register_process(task_id, processing_unit_type, processing_unit, units_count=min_count, memo=config.get("memo", "no memo"))
         log.info(f"Updated processing unit: {config.get('processing_unit')}")
         return config
         
     # ---------------------------------------------------------------------------- #
     #                         排队模式，等待处理器                                     
     # ---------------------------------------------------------------------------- #  
+    wait_count = 0
     while not redis_client.is_my_turn(task_id) or not is_processing_units_ready(processing_unit_type, processing_unit, processing_units, min_count):
-        sys.sleep(30)
+        time.sleep(30)
         curr_time = str(time.strftime('%m月%d日 %H:%M:%S', time.localtime()))
         if redis_client.is_my_turn(task_id):
             # 更新队列
             redis_client.update_queue(task_id)
             
         wait_num = len(redis_client.client.lrange("wait_queue", 0, -1)) - 1
-        print(f"\rcurr_time: {curr_time} | wait_num: {wait_num} | processing_unit_type: {processing_unit_type} | processing_unit: {processing_unit}", end='',  flush=True)
+        print(f"\rlast_update_time: {curr_time} | wait_num: {wait_num} | processing_unit_type: {processing_unit_type} | processing_unit: {processing_unit} | PID: {os.getpid()} | probe_count: {wait_count}", end='',  flush=True)
             
+        self_occupied_gpus = redis_client.get_self_occupied_gpus()
+        
+        devices = Device.all()
+
+        devices = [device for device in devices if device.index not in self_occupied_gpus]
+        
         processing_units = select_devices(
+            devices=devices,
             format="index",
             min_count=min_count,
-            min_free_memory=config.get("processing_unit_min_free_memory", "10") + "GiB",
+            min_free_memory=str(config.get("processing_unit_min_free_memory", "10")) + "GiB",
             max_memory_utilization=config.get("processing_unit_min_free_memory_ratio", "0.5"),
         )
+        if processing_unit_type in ["gpu-a-s", "gpu-a-m"]:
+            processing_unit = processing_units[:min_count]
+        wait_count += 1
     
-    # ---------------------------------------------------------------------------- #
-    #                         从队列中弹出并注册处理器和进程                              
-    # ---------------------------------------------------------------------------- #
-    redis_client.pop_wait_queue(task_id)
-    redis_client.register_gpus(task_id, processing_unit_type, processing_unit, units_count=min_count)
-    redis_client.register_process(task_id, processing_unit_type, processing_unit, units_count=min_count)
     
     # ---------------------------------------------------------------------------- #
     #                         更新可用处理器                                     
     # ---------------------------------------------------------------------------- #
     config.processing_unit = update_processing_unit(processing_unit_type, processing_unit, processing_units, min_count)
+    processing_unit = config.processing_unit
     log.info(f"Updated processing unit: {config.get('processing_unit')}")
+    
+    # ---------------------------------------------------------------------------- #
+    #                         从队列中弹出并注册处理器和进程                              
+    # ---------------------------------------------------------------------------- #
+    redis_client.pop_wait_queue(task_id)
+    redis_client.register_gpus(task_id, processing_unit_type, processing_unit, units_count=min_count, memo=config.get("memo", "no memo"))
+    redis_client.register_process(task_id, processing_unit_type, processing_unit, units_count=min_count, memo=config.get("memo", "no memo"))
         
     return config
 
@@ -150,3 +177,4 @@ def gpu_ready():
     """
     return torch.cuda.is_available() and torch.cuda.device_count() > 0
     
+

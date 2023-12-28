@@ -2,6 +2,7 @@ import comet_ml
 from omegaconf import DictConfig, OmegaConf
 import os
 import json
+import sys
 from lazydl.utils.log import Logger
 from typing import Union
 import datetime
@@ -34,7 +35,7 @@ def init_env(config: Union[DictConfig, dict], current_dir: str = "./") -> None:
     # ---------------------------------------------------------------------------- #
     #                         生成 Task ID                                     
     # ---------------------------------------------------------------------------- #
-    task_id_prefix = config.get("task_id") if config.get("task_id") else datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+    task_id_prefix = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     config.task_id = "{}{}{}".format(task_id_prefix, ''.join([str(num) for num in numpy.random.randint(0, 9, size=18)]), os.getpid())
     
     

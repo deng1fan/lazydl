@@ -6,6 +6,8 @@ import bitsandbytes as bnb
 from collections import defaultdict
 from modelscope import snapshot_download as snapshot_download_ms
 from lazydl.utils.log import Logger
+from lazydl.utils.result import Result
+from typing import Union
 
 logger = Logger(__name__)
 
@@ -59,15 +61,16 @@ def merge_lora_to_base_model(model_name_or_path, adapter_name_or_path, save_path
         trust_remote_code=True,
         low_cpu_mem_usage=True,
         torch_dtype=torch.float16,
-        # device_map='auto',
-        device_map={'': 'cpu'}
+        device_map='auto',
+        # device_map={'': 'cpu'}
     )
     model = PeftModel.from_pretrained(model, adapter_name_or_path, device_map={'': 'cpu'})
     model = model.merge_and_unload()
 
     tokenizer.save_pretrained(save_path)
     model.save_pretrained(save_path)
-    logger.info("Merged model and tokenizer have saved to {save_path}")
+    logger.info(f"\nMerged model and tokenizer have saved to {save_path}")
+    return model
     
     
 def load_model_and_tokenizer(model_name_or_path, load_in_4bit=False, 
@@ -90,7 +93,7 @@ def load_model_and_tokenizer(model_name_or_path, load_in_4bit=False,
         Model: 模型
         Tokenizer: 分词器
     """
-    
+    logger.info("加载模型....")
     if load_in_4bit or use_qlora:
         quantization_config = BitsAndBytesConfig(
             load_in_4bit=True,
@@ -134,7 +137,7 @@ def load_model_and_tokenizer(model_name_or_path, load_in_4bit=False,
             task_type="CAUSAL_LM",
         )
         model = get_peft_model(model, config)
-        model.print_trainable_parameters()
+        # model.print_trainable_parameters()
         model.config.torch_dtype = torch.float32
         
     # 加载tokenzier
@@ -149,6 +152,10 @@ def load_model_and_tokenizer(model_name_or_path, load_in_4bit=False,
         tokenizer.pad_token_id = tokenizer.eod_id
         tokenizer.bos_token_id = tokenizer.eod_id
         tokenizer.eos_token_id = tokenizer.eod_id
+    elif tokenizer.__class__.__name__ == 'LlamaTokenizer':
+        assert tokenizer.eos_token_id is not None
+        assert tokenizer.bos_token_id is not None
+        tokenizer.pad_token_id = tokenizer.unk_token_id if tokenizer.pad_token_id is None else tokenizer.pad_token_id
     # ChatGLMTokenizer不需要设置，仅设置其他tokenizer
     elif tokenizer.__class__.__name__ != 'ChatGLMTokenizer':
         assert tokenizer.eos_token_id is not None
@@ -165,7 +172,7 @@ def load_model_and_tokenizer(model_name_or_path, load_in_4bit=False,
     # if tokenizer.pad_token_id == tokenizer.eos_token_id:
     #     raise Exception('pad_token_id should not be equal to eos_token_id')
 
-
+    logger.info("模型准备就绪")
     return model, tokenizer
 
 
@@ -220,3 +227,85 @@ def find_all_linear_names(model):
     if 'lm_head' in lora_module_names:  # needed for 16-bit
         lora_module_names.remove('lm_head')
     return list(lora_module_names)
+
+
+
+class Pipeline:
+    def __init__(self, 
+                 model: object = None,
+                 tokenizer: object = None,
+                 model_name_or_path: str = None,
+                 use_qlora: bool = True,
+                 load_in_4bit: bool = False,
+                 device_map: str = "auto",
+                 adapter_name_or_path: str = None,
+                 gradient_checkpointing: bool = True, 
+                 lora_rank: int = 64, 
+                 lora_alpha: int = 16, 
+                 lora_dropout: int = 0.05, 
+                 *args, **kargs):
+        if model is not None and tokenizer is not None:
+            self.model, self.tokenizer = model, tokenizer
+        else:
+            self.model, self.tokenizer = load_model_and_tokenizer(model_name_or_path, 
+                                                                    use_qlora=use_qlora, load_in_4bit=load_in_4bit, device_map=device_map,
+                                                                    gradient_checkpointing=gradient_checkpointing,
+                                                                    adapter_name_or_path=adapter_name_or_path,
+                                                                    lora_rank=lora_rank, 
+                                                                    lora_alpha=lora_alpha, 
+                                                                    lora_dropout=lora_dropout)
+        self.model = self.model.eval()
+        
+        
+    def generate(self, 
+                 user_inputs: Union[str, list] = None, 
+                 input_ids: list[list] = None,
+                 max_length: int =512, 
+                 top_k: int = 10, 
+                 top_p: int = 0.9, 
+                 temperature: int = 0.7, 
+                 num_beams: int = 1,
+                 num_return_sequences: int = 1,
+                 *args, **kargs):
+        """
+        Generate text using the model
+        """
+        if input_ids is None:
+            user_inputs_type = type(user_inputs)
+            if user_inputs_type == str:
+                user_inputs = [user_inputs]
+            input_ids = self.tokenizer.batch_encode_plus(user_inputs, max_length=max_length, truncation=True, add_special_tokens=True)["input_ids"]
+
+        else:
+            user_inputs_type = type(input_ids[0])
+            
+            
+        # 找出batch中的最大长度
+        lengths = [len(x) for x in input_ids]
+        # 取出batch中的最大长度
+        batch_max_len = min(max(lengths), max_length)
+
+
+        for input_index, ids in enumerate(input_ids):
+            input_id_pad_len = batch_max_len - len(ids)
+            input_ids[input_index] = [self.tokenizer.pad_token_id] * input_id_pad_len + ids
+        
+        input_ids = torch.tensor(input_ids, dtype=torch.long)
+        input_ids = input_ids.to(self.model.device)
+        
+        outputs = self.model.generate(input_ids,
+                                        max_new_tokens=max_length,
+                                        do_sample=True,
+                                        top_k=top_k,
+                                        top_p=top_p,
+                                        temperature=temperature,
+                                        num_beams=num_beams,
+                                        num_return_sequences=num_return_sequences,
+        )
+        model_input_ids_len = input_ids.size(1)
+        response_ids = outputs[:, model_input_ids_len:]
+        model_responses = self.tokenizer.batch_decode(response_ids, skip_special_tokens=True)
+        if user_inputs_type == str:
+            model_responses = model_responses[0]
+        return model_responses
+    

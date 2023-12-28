@@ -29,7 +29,7 @@ class Result(dict):
             self.pop(k)
 
     def merge(self, merge_dict):
-        if not isinstance(merge_dict, Result):
+        if not isinstance(merge_dict, Result) and not isinstance(merge_dict, dict):
             raise TypeError("不支持的合并类型")
         for k, v in merge_dict.items():
             if k in ["msg", "status"] or k in self:
@@ -78,7 +78,7 @@ class Result(dict):
         keys = self.keys()
         for i, k in enumerate(keys):
             v = self[k]
-            value_str = value_str + k + " : " + str(v) + "\n\n"
+            value_str = value_str + k + " : " + str(v) + "\n"
         return value_str
 
     def aprintend_values(self, next_dict):
@@ -109,6 +109,12 @@ class Result(dict):
 
     def dict(self, key_name, default_value={}):
         return self.get(key_name, default_value)
+    
+    def get_dict(self):
+        dict_item = {}
+        for key, value in self.items():
+            dict_item[key] = value
+        return dict_item
 
     def set(self, key_name, value):
         self[key_name] = value

@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any
 import lightning.pytorch as L
 import torch
 import torch.nn as nn
@@ -21,7 +21,6 @@ arg_to_scheduler = {
     "polynomial": get_polynomial_decay_schedule_with_warmup,
     "constant": get_constant_schedule_with_warmup,  # not supported for now
 }
-
 
 
 class BaseLitModel(L.LightningModule):
@@ -54,10 +53,13 @@ class BaseLitModel(L.LightningModule):
         self.log("lr", round(self.opt.param_groups[0]['lr'], 9), prog_bar=True, logger=True, on_step=True,
                  rank_zero_only=True, sync_dist=True)
         self.log("current_epoch", float(self.current_epoch))
-        self.log("progress", self.global_step / self.total_steps())
+        self.log("progress", round(self.global_step / self.total_steps(), 2))
         return {
             'loss': outputs['loss'],
         }
+    
+    def on_train_epoch_end(self):
+        self.log("progress", round(self.global_step / self.total_steps(), 2))
 
     def validation_step(self, batch: Any, batch_idx: int):
         outputs = self(**batch)
@@ -136,3 +138,11 @@ class BaseLitModel(L.LightningModule):
 
     def total_steps(self) -> int:
         return self.trainer.estimated_stepping_batches
+    
+    def generate(self, *args, **kargs):
+        return self.backbone.generate(*args, **kargs)
+    
+    
+
+    
+

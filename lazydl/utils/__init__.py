@@ -11,3 +11,4 @@ from lazydl.utils.hf_util import *
 from lazydl.utils.trainer import *
 from lazydl.utils.loss import *
 from lazydl.utils.model_wrapper import *
+from lazydl.utils.eval_methods import *
